@@ -1,0 +1,84 @@
+erDiagram
+    tenants ||--|| licenses : "holds active"
+    subscription_plans ||--o{ licenses : "defines limits"
+    tenants ||--o{ audit_logs : "records interventions"
+    tenants ||--o{ invoices : "generates financial records"
+
+    tenants {
+        bigint id PK
+        uuid uuid UK
+        string company_name
+        string first_name
+        string last_name
+        string email UK
+        string phone_number
+        string subdomain UK
+        string custom_domain UK "nullable"
+        string address_line_1
+        string address_line_2 "nullable"
+        string po_box "nullable"
+        string city
+        string county
+        string country
+        decimal latitude "9,6, nullable"
+        decimal longitude "9,6, nullable"
+        decimal wallet_balance "15,2, default 0.00"
+        string docker_container_id "nullable"
+        integer host_container_port UK
+        integer host_ssh_port UK
+        string db_name UK
+        string db_username
+        string db_password_encrypted
+        string status "enum: active, suspended, provisioning"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    subscription_plans {
+        bigint id PK
+        string name "e.g., Starter, Growth, Enterprise"
+        string slug UK
+        decimal monthly_price_kes "10,2"
+        jsonb features_payload "locks/unlocks modules like portals, inventory"
+        integer max_branches_allowed
+        integer max_users_per_branch
+        boolean supports_custom_domain
+        boolean is_active
+        timestamp created_at
+    }
+
+    licenses {
+        bigint id PK
+        bigint tenant_id FK
+        bigint subscription_plan_id FK
+        string license_key UK
+        string status "enum: trialing, active, past_due, expired"
+        integer billing_duration_months "default 1"
+        timestamp starts_at
+        timestamp expires_at
+        timestamp canceled_at "nullable"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    invoices {
+        bigint id PK
+        bigint tenant_id FK
+        string invoice_number UK
+        decimal amount_kes "10,2"
+        string payment_status "enum: unpaid, paid, partially_paid, void"
+        string payment_reference "nullable, e.g., M-Pesa Code"
+        timestamp due_at
+        timestamp paid_at "nullable"
+        timestamp created_at
+    }
+
+    audit_logs {
+        bigint id PK
+        bigint tenant_id FK "nullable"
+        string action "e.g., container.suspend, keys.rotate"
+        string performed_by "system or user_email"
+        jsonb context_data "stores pre/post snapshot change states"
+        ip_address ip_address
+        timestamp created_at
+    }
