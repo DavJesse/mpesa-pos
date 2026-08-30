@@ -1,0 +1,6 @@
+2026-08-30 16:57:53,094 INFO Set uid to user 0 succeeded
+2026-08-30 16:57:53,097 INFO supervisord started with pid 1
+2026-08-30 16:57:54,107 INFO spawned: 'php-fpm' with pid 6
+2026-08-30 16:57:54,114 INFO spawned: 'sshd' with pid 7
+2026-08-30 16:57:55,187 INFO success: php-fpm entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2026-08-30 16:57:55,187 INFO success: sshd entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
