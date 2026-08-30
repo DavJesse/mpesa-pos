@@ -42,3 +42,27 @@ To prevent port clashing when running multiple tenants on the same machine, over
 cd tenant-template
 HTTP_PORT=9002 SSH_PORT=2202 TENANT_NAME=naivas docker-compose up -d
 ```
+
+
+## Essential Tenant Commands
+
+Because the Laravel application lives inside isolated Docker containers, you must run your Artisan commands *through* Docker or via SSH.
+
+### Running Database Migrations
+Since the environment is set to `production` by default for safety, you must force migrations or run them interactively:
+```bash
+# Non-interactive (Best for CI/CD or quick updates)
+docker exec tenant-app-default php artisan migrate --force
+
+# Interactive (Allows you to type 'yes' to prompts)
+docker exec -it tenant-app-default php artisan migrate
+```
+
+### Other Common Artisan Commands
+```bash
+# Clear application caches
+docker exec tenant-app-default php artisan optimize:clear
+
+# Create a new controller (Requires interactive mode if prompting)
+docker exec -it tenant-app-default php artisan make:controller MpesaController
+```
