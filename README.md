@@ -58,6 +58,12 @@ docker exec tenant-app-default php artisan migrate --force
 docker exec -it tenant-app-default php artisan migrate
 ```
 
+### Running Tests
+To ensure features and Role-Based Access Control (RBAC) are working as expected, run the PHPUnit test suite:
+```bash
+docker exec tenant-app-default php artisan test
+```
+
 ### Other Common Artisan Commands
 ```bash
 # Clear application caches
