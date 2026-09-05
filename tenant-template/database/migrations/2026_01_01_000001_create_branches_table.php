@@ -13,7 +13,7 @@ class CreateBranchesTable extends Migration
                 $table->uuid('id')->primary();
                 $table->string('name', 50);
                 $table->string('location', 100);
-                $table->string('mpesa_shortcode_override_nullable', 15)->nullable();
+                $table->string('mpesa_shortcode_override_nullable', 10)->nullable();
                 $table->timestamps();
                 $table->softDeletes();
             });
@@ -22,8 +22,10 @@ class CreateBranchesTable extends Migration
 
     public function down()
     {
+        Schema::disableForeignKeyConstraints();
         if (Schema::hasTable('branches')) {
             Schema::dropIfExists('branches');
         }
+        Schema::enableForeignKeyConstraints();
     }
 }
