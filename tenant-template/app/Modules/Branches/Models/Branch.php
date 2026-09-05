@@ -19,6 +19,11 @@ class Branch extends Model
         'mpesa_shortcode_override_nullable',
     ];
 
+    protected static function newFactory()
+    {
+        return \Database\Factories\BranchFactory::new();
+    }
+
     public function users()
     {
         return $this->hasMany(User::class);

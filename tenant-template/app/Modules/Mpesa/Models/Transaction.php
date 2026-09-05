@@ -26,6 +26,11 @@ class Transaction extends Model
         'mpesa_merchant_request_id',
     ];
 
+    protected static function newFactory()
+    {
+        return \Database\Factories\TransactionFactory::new();
+    }
+
     /**
      * The "booted" method of the model.
      *

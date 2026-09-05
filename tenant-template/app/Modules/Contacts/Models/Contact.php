@@ -18,6 +18,11 @@ class Contact extends Model
         'phone_number',
     ];
 
+    protected static function newFactory()
+    {
+        return \Database\Factories\ContactFactory::new();
+    }
+
     /**
      * The "booted" method of the model.
      *
