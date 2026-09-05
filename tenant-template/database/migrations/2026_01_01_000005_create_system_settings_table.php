@@ -21,8 +21,10 @@ class CreateSystemSettingsTable extends Migration
 
     public function down()
     {
+        Schema::disableForeignKeyConstraints();
         if (Schema::hasTable('system_settings')) {
             Schema::dropIfExists('system_settings');
         }
+        Schema::enableForeignKeyConstraints();
     }
 }
