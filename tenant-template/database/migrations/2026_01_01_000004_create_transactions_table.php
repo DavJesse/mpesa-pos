@@ -14,7 +14,7 @@ class CreateTransactionsTable extends Migration
                 $table->foreignUuid('branch_id')->constrained('branches')->onDelete('restrict');
                 $table->foreignUuid('user_id')->nullable()->constrained('users')->onDelete('set null');
                 $table->foreignUuid('contact_id')->constrained('contacts')->onDelete('restrict');
-                $table->decimal('amount', 15, 2);
+                $table->decimal('amount', 10, 2);
                 $table->string('payment_method', 20);
                 $table->enum('status', ['pending', 'success', 'failed'])->default('pending');
                 $table->string('mpesa_checkout_request_id', 50)->nullable();
@@ -27,8 +27,10 @@ class CreateTransactionsTable extends Migration
 
     public function down()
     {
+        Schema::disableForeignKeyConstraints();
         if (Schema::hasTable('transactions')) {
             Schema::dropIfExists('transactions');
         }
+        Schema::enableForeignKeyConstraints();
     }
 }
