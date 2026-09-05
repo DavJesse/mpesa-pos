@@ -14,6 +14,22 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
+
+    Route::get('/transactions', function (Request $request) {
+        return \App\Modules\Mpesa\Models\Transaction::all();
+    });
+
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/system-settings/mpesa', function (Request $request) {
+            // Check policy just to be doubly sure, although middleware catches it first
+            if ($request->user()->cannot('viewAny', \App\Modules\System\Models\SystemSetting::class)) {
+                abort(403);
+            }
+            return response()->json(['key' => 'mpesa_credentials', 'payload' => '...']);
+        });
+    });
 });
