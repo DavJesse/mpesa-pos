@@ -21,8 +21,10 @@ class CreateContactsTable extends Migration
 
     public function down()
     {
+        Schema::disableForeignKeyConstraints();
         if (Schema::hasTable('contacts')) {
             Schema::dropIfExists('contacts');
         }
+        Schema::enableForeignKeyConstraints();
     }
 }
