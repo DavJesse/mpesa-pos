@@ -2,9 +2,13 @@ name: CI (Testing)
 
 on:
   push:
-    branches: [ "main" ]
+    paths:
+      - 'tenant-template/**'
+      - '.github/workflows/tenant-template-ci.yml'
   pull_request:
-    branches: [ "main" ]
+    paths:
+      - 'tenant-template/**'
+      - '.github/workflows/tenant-template-ci.yml'
 
 jobs:
   test:

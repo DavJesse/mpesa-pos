@@ -16,3 +16,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/subscription-expired', function () {
+    return view('subscription-expired'); // We will need to create this view
+})->name('subscription.expired');
