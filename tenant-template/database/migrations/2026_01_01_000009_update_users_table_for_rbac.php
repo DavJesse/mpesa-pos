@@ -9,19 +9,20 @@ class UpdateUsersTableForRbac extends Migration
     public function up()
     {
         if (Schema::hasTable('users')) {
+            // Step 1: Drop old columns
             Schema::table('users', function (Blueprint $table) {
-                // Drop the old ENUM column if it exists
                 if (Schema::hasColumn('users', 'role')) {
                     $table->dropColumn('role');
                 }
+            });
 
-                // Make branch_id nullable if not already (for global admins)
-                // Note: SQLite has limited support for changing columns, but since we recreate tables
-                // or are on a fresh run, it's safer to just drop and recreate if needed, or simply 
-                // modify it if the driver supports it. For this template, let's assume standard behavior.
+            // Step 2: Change existing columns
+            Schema::table('users', function (Blueprint $table) {
                 $table->uuid('branch_id')->nullable()->change();
+            });
 
-                // Add role_id and pos_pin
+            // Step 3: Add new columns
+            Schema::table('users', function (Blueprint $table) {
                 $table->foreignId('role_id')->nullable()->constrained('roles')->onDelete('restrict');
                 $table->string('pos_pin', 60)->nullable();
             });
@@ -32,11 +33,19 @@ class UpdateUsersTableForRbac extends Migration
     {
         Schema::disableForeignKeyConstraints();
         if (Schema::hasTable('users')) {
+            // Step 1: Drop new columns
             Schema::table('users', function (Blueprint $table) {
                 $table->dropForeign(['role_id']);
                 $table->dropColumn(['role_id', 'pos_pin']);
+            });
+
+            // Step 2: Add old ENUM back
+            Schema::table('users', function (Blueprint $table) {
                 $table->enum('role', ['admin', 'manager', 'teller'])->default('teller');
-                // Revert branch_id to be required
+            });
+
+            // Step 3: Revert branch_id
+            Schema::table('users', function (Blueprint $table) {
                 $table->uuid('branch_id')->nullable(false)->change();
             });
         }

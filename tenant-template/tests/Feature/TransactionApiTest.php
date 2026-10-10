@@ -34,8 +34,10 @@ class TransactionApiTest extends TestCase
             'amount' => 200,
         ]);
 
+        $role = \App\Modules\Auth\Models\Role::firstOrCreate(['name' => 'teller', 'level' => 10]);
+
         $teller = User::factory()->create([
-            'role' => 'teller',
+            'role_id' => $role->id,
             'branch_id' => $branchA->id
         ]);
 
@@ -69,8 +71,10 @@ class TransactionApiTest extends TestCase
             'amount' => 200,
         ]);
 
+        $role = \App\Modules\Auth\Models\Role::firstOrCreate(['name' => 'admin', 'level' => 100]);
+
         $admin = User::factory()->create([
-            'role' => 'admin',
+            'role_id' => $role->id,
             'branch_id' => $branchA->id
         ]);
 
