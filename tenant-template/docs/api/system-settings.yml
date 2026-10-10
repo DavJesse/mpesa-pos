@@ -1,0 +1,82 @@
+openapi: 3.0.3
+info:
+  title: Tenant System Settings API
+  description: API endpoints for global tenant configuration.
+  version: 1.0.0
+servers:
+  - url: /api
+    description: Tenant API
+paths:
+  /system-settings:
+    get:
+      summary: Get all system settings
+      description: Retrieve global system configuration (M-Pesa keys, SMS gateways, tax configurations). Requires `configure_system` permission.
+      tags:
+        - System Settings
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: A JSON array of system settings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SystemSetting'
+        '403':
+          description: Forbidden
+
+  /system-settings/mpesa:
+    put:
+      summary: Update M-Pesa Gateway Settings
+      tags:
+        - System Settings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                consumer_key:
+                  type: string
+                consumer_secret:
+                  type: string
+                passkey:
+                  type: string
+                shortcode:
+                  type: string
+      responses:
+        '200':
+          description: M-Pesa settings updated successfully
+        '403':
+          description: Forbidden - Requires `configure_gateways` permission.
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    SystemSetting:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        key:
+          type: string
+          example: "mpesa_credentials"
+        payload:
+          type: object
+          description: JSON object containing the actual setting data
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
