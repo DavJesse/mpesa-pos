@@ -14,8 +14,9 @@ class SystemSettingsApiTest extends TestCase
     public function test_teller_cannot_access_system_settings()
     {
         $branch = Branch::factory()->create(['name' => 'HQ', 'location' => 'NBI']);
+        $role = \App\Modules\Auth\Models\Role::firstOrCreate(['name' => 'teller', 'level' => 10]);
         $user = User::factory()->create([
-            'role' => 'teller',
+            'role_id' => $role->id,
             'branch_id' => $branch->id
         ]);
 
@@ -27,8 +28,9 @@ class SystemSettingsApiTest extends TestCase
     public function test_admin_can_access_system_settings()
     {
         $branch = Branch::factory()->create(['name' => 'HQ', 'location' => 'NBI']);
+        $role = \App\Modules\Auth\Models\Role::firstOrCreate(['name' => 'admin', 'level' => 100]);
         $user = User::factory()->create([
-            'role' => 'admin',
+            'role_id' => $role->id,
             'branch_id' => $branch->id
         ]);
 

@@ -23,8 +23,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role',
+        'role_id',
         'branch_id',
+        'pos_pin',
     ];
 
     /**
@@ -35,6 +36,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'pos_pin',
     ];
 
     /**
@@ -56,18 +58,23 @@ class User extends Authenticatable
         return $this->belongsTo(Branch::class);
     }
 
+    public function role()
+    {
+        return $this->belongsTo(\App\Modules\Auth\Models\Role::class);
+    }
+
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return $this->role && $this->role->name === 'admin';
     }
 
     public function isManager(): bool
     {
-        return $this->role === 'manager';
+        return $this->role && $this->role->name === 'manager';
     }
 
     public function isTeller(): bool
     {
-        return $this->role === 'teller';
+        return $this->role && $this->role->name === 'teller';
     }
 }

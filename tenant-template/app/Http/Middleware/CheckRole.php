@@ -17,7 +17,7 @@ class CheckRole
      */
     public function handle(Request $request, Closure $next, ...$roles)
     {
-        if (! $request->user() || ! in_array($request->user()->role, $roles)) {
+        if (! $request->user() || ! $request->user()->role || ! in_array($request->user()->role->name, $roles)) {
             return response()->json(['message' => 'Forbidden.'], 403);
         }
 

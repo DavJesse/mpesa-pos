@@ -1,0 +1,209 @@
+openapi: 3.0.3
+info:
+  title: Tenant RBAC API
+  description: API endpoints for managing Roles and Permissions within a Tenant.
+  version: 1.0.0
+servers:
+  - url: /api
+    description: Tenant API
+paths:
+  /roles:
+    get:
+      summary: List all roles
+      description: Returns a list of all roles within the tenant.
+      tags:
+        - Roles
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: A JSON array of roles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+    post:
+      summary: Create a new custom role
+      description: Creates a custom role. A user cannot assign a level higher than or equal to their own level.
+      tags:
+        - Roles
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleInput'
+      responses:
+        '201':
+          description: Role created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '403':
+          description: Forbidden - Attempted to create a role with a higher level than permitted.
+        '422':
+          description: Validation error
+
+  /roles/{id}:
+    get:
+      summary: Get a specific role
+      tags:
+        - Roles
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Role details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleWithPermissions'
+        '404':
+          description: Role not found
+    put:
+      summary: Update a custom role
+      tags:
+        - Roles
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleInput'
+      responses:
+        '200':
+          description: Role updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '403':
+          description: Forbidden - Cannot modify system roles or elevate levels illegally.
+        '404':
+          description: Role not found
+    delete:
+      summary: Delete a custom role
+      tags:
+        - Roles
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Role deleted successfully
+        '403':
+          description: Forbidden - System roles (is_system = true) cannot be deleted.
+        '404':
+          description: Role not found
+
+  /permissions:
+    get:
+      summary: List all permissions
+      description: Returns a list of all actionable permissions in the system.
+      tags:
+        - Permissions
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: A JSON array of permissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Permission'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Role:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: manager
+        level:
+          type: integer
+          description: Hierarchy level (higher = more permissions)
+          example: 50
+        is_system:
+          type: boolean
+          description: If true, the role cannot be deleted
+          example: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    RoleInput:
+      type: object
+      required:
+        - name
+        - level
+      properties:
+        name:
+          type: string
+          example: auditor
+        level:
+          type: integer
+          example: 40
+        permissions:
+          type: array
+          description: Array of permission IDs to assign to this role
+          items:
+            type: integer
+          example: [1, 2, 5]
+    RoleWithPermissions:
+      allOf:
+        - $ref: '#/components/schemas/Role'
+        - type: object
+          properties:
+            permissions:
+              type: array
+              items:
+                $ref: '#/components/schemas/Permission'
+    Permission:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: manage_users
+        description:
+          type: string
+          example: Create, edit, and delete users

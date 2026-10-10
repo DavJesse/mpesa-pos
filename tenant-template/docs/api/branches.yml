@@ -1,0 +1,169 @@
+openapi: 3.0.3
+info:
+  title: Tenant Branches API
+  description: API endpoints for managing physical store locations (branches).
+  version: 1.0.0
+servers:
+  - url: /api
+    description: Tenant API
+paths:
+  /branches:
+    get:
+      summary: List all branches
+      description: Returns a list of all branches.
+      tags:
+        - Branches
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: A JSON array of branches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Branch'
+    post:
+      summary: Create a new branch
+      tags:
+        - Branches
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BranchInput'
+      responses:
+        '201':
+          description: Branch created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Branch'
+        '403':
+          description: Forbidden - Requires `manage_branches` permission.
+        '422':
+          description: Validation error
+
+  /branches/{id}:
+    get:
+      summary: Get a specific branch
+      tags:
+        - Branches
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Branch details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Branch'
+        '404':
+          description: Branch not found
+    put:
+      summary: Update a branch
+      tags:
+        - Branches
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BranchInput'
+      responses:
+        '200':
+          description: Branch updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Branch'
+        '403':
+          description: Forbidden
+        '404':
+          description: Branch not found
+    delete:
+      summary: Delete a branch
+      tags:
+        - Branches
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Branch deleted successfully
+        '403':
+          description: Forbidden
+        '404':
+          description: Branch not found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Branch:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "Nairobi HQ"
+        location:
+          type: string
+          example: "Westlands"
+        mpesa_shortcode_override_nullable:
+          type: string
+          nullable: true
+          example: "123456"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    BranchInput:
+      type: object
+      required:
+        - name
+        - location
+      properties:
+        name:
+          type: string
+          example: "Nairobi HQ"
+        location:
+          type: string
+          example: "Westlands"
+        mpesa_shortcode_override_nullable:
+          type: string
+          nullable: true
+          description: Optional specific M-Pesa till number for this branch if different from global settings.

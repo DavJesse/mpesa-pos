@@ -1,64 +1,54 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400"></a></p>
+# M-Pesa SaaS POS - Tenant Template
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+This repository serves as the foundational template for all tenant applications in the M-Pesa SaaS POS network. When a new tenant registers on the Landlord control plane, a clone of this application is provisioned and deployed in an isolated container.
 
-## About Laravel
+## Architecture
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+This application acts as a client to the central Landlord application. It does not handle subscription billing or global license management; instead, it queries the Landlord's internal verification API to check its operational status.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Core Modules
+*   **Mpesa**: Handles payment gateways, checkouts, and C2B/B2B transaction logging.
+*   **Branches**: Supports multi-branch operations, isolating data at the point of sale.
+*   **Contacts**: Customer and supplier management.
+*   **System Settings**: Configuration for POS behavior, API keys, and gateways.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Role-Based Access Control (RBAC) Spine
 
-## Learning Laravel
+This application uses a dynamic, hierarchical RBAC system to manage user permissions, enforce branch data isolation, and handle manager overrides safely. 
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Roles and Hierarchy
+Instead of hardcoded enums, roles are stored in the `roles` database table. Each role has a specific `level` (an integer) to prevent privilege escalation (a user cannot assign or create a role with a level higher than their own).
+*   **Admin (`level: 100`)**: Full global access. Bypasses branch isolation.
+*   **Manager (`level: 50`)**: Branch-specific oversight, reporting, and teller management.
+*   **Teller (`level: 10`)**: Frontline staff, restricted to transaction processing for their assigned branch.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 1500 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Permissions
+Fine-grained permissions (e.g., `void_transactions`, `configure_gateways`) are defined in `config/rbac.php` and stored in the `permissions` table. These are linked to roles via the `role_permissions` pivot table.
 
-## Laravel Sponsors
+### Security & Overrides
+*   **Deletion Protection**: System roles (Admin, Manager, Teller) are protected via an `is_system` flag and cannot be deleted.
+*   **Manager Overrides**: The `users` table includes a `pos_pin` column, allowing managers to quickly authorize restricted actions (like voids or refunds) on a teller's screen without requiring a full logout.
+*   **Branch Isolation**: Managers and Tellers are strictly scoped to their `branch_id`.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+## Installation & Deployment
 
-### Premium Partners
+When provisioning this template for a new tenant, ensure the following commands are run to establish the schema and seed the system roles:
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+```bash
+# Install required dependencies (Doctrine DBAL is required for schema modifications)
+composer install
 
-## Contributing
+# Run all migrations
+php artisan migrate
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# Seed the database with the RBAC system roles and permissions
+php artisan db:seed --class=RolePermissionSeeder
+```
 
-## Code of Conduct
+## Testing
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+The test suite utilizes an in-memory SQLite database. All RBAC and Landlord license verification middleware tests are included.
 
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+php artisan test
+```

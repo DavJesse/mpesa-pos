@@ -1,0 +1,183 @@
+openapi: 3.0.3
+info:
+  title: Tenant Transactions API
+  description: API endpoints for processing and viewing POS transactions, integrating heavily with M-Pesa.
+  version: 1.0.0
+servers:
+  - url: /api
+    description: Tenant API
+paths:
+  /transactions:
+    get:
+      summary: List transaction history
+      description: Returns a list of transactions. Admins see all branch transactions. Managers and Tellers only see transactions tied to their assigned `branch_id`.
+      tags:
+        - Transactions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination
+          required: false
+          schema:
+            type: integer
+        - name: status
+          in: query
+          description: Filter by transaction status
+          required: false
+          schema:
+            type: string
+            enum: [pending, completed, failed, voided]
+      responses:
+        '200':
+          description: A paginated list of transactions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Transaction'
+                  current_page:
+                    type: integer
+                  last_page:
+                    type: integer
+
+    post:
+      summary: Initiate a new transaction
+      description: Initiates a new sale at the POS. If the payment method is M-Pesa, this triggers an STK Push to the customer's phone.
+      tags:
+        - Transactions
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionInput'
+      responses:
+        '201':
+          description: Transaction initiated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '403':
+          description: Forbidden - User lacks `create_transactions` permission.
+        '422':
+          description: Validation error
+
+  /transactions/{id}/void:
+    post:
+      summary: Void a transaction
+      description: Marks a transaction as voided. If a Teller attempts this, they must provide a Manager's `pos_pin` in the payload for authorization.
+      tags:
+        - Transactions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Transaction UUID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                manager_override_pin:
+                  type: string
+                  description: The 4-6 digit POS PIN of a manager to authorize the void if the current user lacks direct permission.
+                  example: "123456"
+      responses:
+        '200':
+          description: Transaction voided successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '403':
+          description: Forbidden - Invalid Manager PIN or user lacks `void_transactions` permission.
+        '404':
+          description: Transaction not found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        branch_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+          description: ID of the teller who processed the sale
+        contact_id:
+          type: string
+          format: uuid
+          description: ID of the customer
+          nullable: true
+        amount:
+          type: number
+          format: float
+          example: 1500.00
+        payment_method:
+          type: string
+          enum: [mpesa, cash, card]
+          example: mpesa
+        status:
+          type: string
+          enum: [pending, completed, failed, voided]
+          example: pending
+        mpesa_checkout_request_id:
+          type: string
+          nullable: true
+          description: Used to track the STK push status
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    TransactionInput:
+      type: object
+      required:
+        - amount
+        - payment_method
+      properties:
+        amount:
+          type: number
+          format: float
+          example: 1500.00
+        payment_method:
+          type: string
+          enum: [mpesa, cash, card]
+          example: mpesa
+        contact_id:
+          type: string
+          format: uuid
+          description: Optional customer ID for loyalty and tracking.
+        phone_number:
+          type: string
+          description: Required if payment_method is mpesa and contact_id is not provided.
+          example: "254712345678"
