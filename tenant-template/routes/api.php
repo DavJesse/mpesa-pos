@@ -1,5 +1,8 @@
 <?php
 
+use App\Modules\Mpesa\Http\Controllers\MpesaStkController;
+use App\Modules\Mpesa\Models\Transaction;
+use App\Modules\System\Http\Controllers\MpesaSettingsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -8,9 +11,7 @@ use Illuminate\Support\Facades\Route;
 | API Routes
 |--------------------------------------------------------------------------
 |
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| is assigned the "api" middleware group. Enjoy building your API!
+| Communication between backend and frontend is strictly via REST APIs.
 |
 */
 
@@ -20,16 +21,29 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::get('/transactions', function (Request $request) {
-        return \App\Modules\Mpesa\Models\Transaction::all();
+        return $request->has('page')
+            ? Transaction::latest()->paginate(20)
+            : Transaction::all();
     });
 
+    // M-Pesa STK Push trigger
+    Route::post('/mpesa/stkpush', [MpesaStkController::class, 'initiate']);
+    Route::post('/v1/mpesa/stkpush', [MpesaStkController::class, 'initiate']);
+
+    // Admin-only Settings
     Route::middleware('role:admin')->group(function () {
         Route::get('/system-settings/mpesa', function (Request $request) {
-            // Check policy just to be doubly sure, although middleware catches it first
-            if ($request->user()->cannot('viewAny', \App\Modules\System\Models\SystemSetting::class)) {
-                abort(403);
-            }
             return response()->json(['key' => 'mpesa_credentials', 'payload' => '...']);
+        });
+
+        Route::prefix('admin/settings')->group(function () {
+            Route::get('/mpesa', [MpesaSettingsController::class, 'show']);
+            Route::post('/mpesa', [MpesaSettingsController::class, 'update']);
+        });
+
+        Route::prefix('v1/admin/settings')->group(function () {
+            Route::get('/mpesa', [MpesaSettingsController::class, 'show']);
+            Route::post('/mpesa', [MpesaSettingsController::class, 'update']);
         });
     });
 });

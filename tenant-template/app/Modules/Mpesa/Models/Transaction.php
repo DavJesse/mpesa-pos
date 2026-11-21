@@ -24,6 +24,9 @@ class Transaction extends Model
         'status',
         'mpesa_checkout_request_id',
         'mpesa_merchant_request_id',
+        'mpesa_response_code',
+        'mpesa_response_description',
+        'mpesa_customer_message',
     ];
 
     protected static function newFactory()

@@ -1,0 +1,113 @@
+<?php
+
+namespace App\Modules\System\Http\Controllers;
+
+use App\Http\Controllers\Controller;
+use App\Modules\Mpesa\Services\MpesaService;
+use App\Modules\System\Models\SystemSetting;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Validation\Rule;
+
+class MpesaSettingsController extends Controller
+{
+    protected MpesaService $mpesaService;
+
+    public function __construct(MpesaService $mpesaService)
+    {
+        $this->mpesaService = $mpesaService;
+    }
+
+    /**
+     * Retrieve Daraja configuration with masked credentials.
+     */
+    public function show(): JsonResponse
+    {
+        $record = SystemSetting::where('key', 'daraja_credentials')->first();
+
+        if (!$record || empty($record->payload)) {
+            return response()->json([
+                'configured' => false,
+                'message' => 'Daraja credentials have not been configured yet.',
+            ]);
+        }
+
+        $payload = is_array($record->payload) ? $record->payload : json_decode($record->payload, true);
+
+        $consumerKeyMasked = null;
+        if (!empty($payload['consumer_key'])) {
+            try {
+                $decryptedKey = Crypt::decryptString($payload['consumer_key']);
+                $len = strlen($decryptedKey);
+                $consumerKeyMasked = $len > 8
+                    ? substr($decryptedKey, 0, 4) . str_repeat('•', max(4, $len - 8)) . substr($decryptedKey, -4)
+                    : str_repeat('•', 8);
+            } catch (\Throwable $e) {
+                $consumerKeyMasked = '••••••••';
+            }
+        }
+
+        return response()->json([
+            'configured' => true,
+            'data' => [
+                'consumer_key_masked' => $consumerKeyMasked,
+                'consumer_secret_masked' => !empty($payload['consumer_secret']) ? '••••••••' : null,
+                'passkey_masked' => !empty($payload['passkey']) ? '••••••••' : null,
+                'shortcode' => $payload['shortcode'] ?? null,
+                'shortcode_type' => $payload['shortcode_type'] ?? MpesaService::SHORTCODE_TYPE_PAYBILL,
+                'env' => $payload['env'] ?? 'sandbox',
+                'callback_url' => $payload['callback_url'] ?? null,
+                'updated_at' => $record->updated_at,
+            ],
+        ]);
+    }
+
+    /**
+     * Store or update encrypted Daraja credentials.
+     */
+    public function update(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'consumer_key' => ['required', 'string', 'max:100'],
+            'consumer_secret' => ['required', 'string', 'max:100'],
+            'shortcode' => ['required', 'string', 'max:15'],
+            'passkey' => ['required', 'string', 'max:200'],
+            'env' => ['required', Rule::in(['sandbox', 'production'])],
+            'shortcode_type' => ['required', Rule::in(['paybill', 'till'])],
+            'callback_url' => ['nullable', 'url', 'max:255'],
+        ]);
+
+        // Encrypt sensitive secrets before persisting to database
+        $encryptedPayload = [
+            'consumer_key' => Crypt::encryptString(trim($validated['consumer_key'])),
+            'consumer_secret' => Crypt::encryptString(trim($validated['consumer_secret'])),
+            'passkey' => Crypt::encryptString(trim($validated['passkey'])),
+            'shortcode' => trim($validated['shortcode']),
+            'env' => $validated['env'],
+            'shortcode_type' => $validated['shortcode_type'],
+            'callback_url' => $validated['callback_url'] ?? null,
+        ];
+
+        $setting = SystemSetting::updateOrCreate(
+            ['key' => 'daraja_credentials'],
+            ['payload' => $encryptedPayload]
+        );
+
+        // Invalidate old cached OAuth token
+        $this->mpesaService->clearTokenCache($validated['shortcode']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Daraja credentials stored successfully with AES-256 encryption.',
+            'data' => [
+                'shortcode' => $validated['shortcode'],
+                'shortcode_type' => $validated['shortcode_type'],
+                'env' => $validated['env'],
+                'callback_url' => $validated['callback_url'] ?? null,
+                'updated_at' => $setting->updated_at,
+            ],
+        ]);
+    }
+}
+

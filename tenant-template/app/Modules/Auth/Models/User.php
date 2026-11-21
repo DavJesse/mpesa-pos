@@ -23,6 +23,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
         'role_id',
         'branch_id',
         'pos_pin',
@@ -65,16 +66,25 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return $this->role && $this->role->name === 'admin';
+        if ($this->role && is_object($this->role)) {
+            return $this->role->name === 'admin';
+        }
+        return ($this->getAttributes()['role'] ?? '') === 'admin';
     }
 
     public function isManager(): bool
     {
-        return $this->role && $this->role->name === 'manager';
+        if ($this->role && is_object($this->role)) {
+            return $this->role->name === 'manager';
+        }
+        return ($this->getAttributes()['role'] ?? '') === 'manager';
     }
 
     public function isTeller(): bool
     {
-        return $this->role && $this->role->name === 'teller';
+        if ($this->role && is_object($this->role)) {
+            return $this->role->name === 'teller';
+        }
+        return ($this->getAttributes()['role'] ?? '') === 'teller';
     }
 }
