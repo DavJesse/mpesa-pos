@@ -27,6 +27,15 @@ class Transaction extends Model
         'mpesa_response_code',
         'mpesa_response_description',
         'mpesa_customer_message',
+        'mpesa_receipt_number',
+        'mpesa_result_code',
+        'mpesa_result_desc',
+        'paid_at',
+    ];
+
+    protected $casts = [
+        'paid_at' => 'datetime',
+        'amount' => 'decimal:2',
     ];
 
     protected static function newFactory()
