@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Mpesa\Http\Controllers\MpesaCallbackController;
 use App\Modules\Mpesa\Http\Controllers\MpesaStkController;
 use App\Modules\Mpesa\Models\Transaction;
 use App\Modules\System\Http\Controllers\MpesaSettingsController;
@@ -14,6 +15,10 @@ use Illuminate\Support\Facades\Route;
 | Communication between backend and frontend is strictly via REST APIs.
 |
 */
+
+// Public Safaricom Daraja Webhook Callbacks (Protected by tenant_secure_token signature)
+Route::post('/mpesa/callback/{tenant_secure_token}', [MpesaCallbackController::class, 'handleCallback']);
+Route::post('/v1/mpesa/callback/{tenant_secure_token}', [MpesaCallbackController::class, 'handleCallback']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {

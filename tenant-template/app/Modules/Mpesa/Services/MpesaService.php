@@ -91,6 +91,7 @@ class MpesaService
             'passkey' => $passkey,
             'env' => $payload['env'] ?? 'sandbox',
             'shortcode_type' => $payload['shortcode_type'] ?? self::SHORTCODE_TYPE_PAYBILL,
+            'callback_token' => $payload['callback_token'] ?? null,
             'callback_url' => $payload['callback_url'] ?? null,
         ];
     }
@@ -267,9 +268,14 @@ class MpesaService
         $timestamp = date('YmdHis');
         $password = base64_encode($shortcode . $passkey . $timestamp);
 
+        $callbackToken = $settings['callback_token'] ?? null;
+        $defaultCallback = $callbackToken
+            ? url('/api/v1/mpesa/callback/' . $callbackToken)
+            : url('/api/v1/mpesa/callback');
+
         $callbackUrl = $params['callback_url']
             ?? $settings['callback_url']
-            ?? url('/api/v1/mpesa/callback');
+            ?? $defaultCallback;
 
         $accountReference = substr($params['account_reference'] ?? 'Payment', 0, 12);
         $transactionDesc = substr($params['transaction_desc'] ?? 'Payment', 0, 13);
@@ -319,4 +325,3 @@ class MpesaService
         ];
     }
 }
-
